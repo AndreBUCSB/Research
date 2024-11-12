@@ -213,7 +213,7 @@ class DiffCSEWithRTDModel(nn.Module):
         # Sentence Encoder
         self.encoder = RobertaModel.from_pretrained(model_name)
         # Contrastive Head
-        self.dropout = nn.Dropout(0.1)
+        self.dropout = nn.Dropout(0.2)
         self.pooler = nn.Linear(self.encoder.config.hidden_size, self.encoder.config.hidden_size)
         self.activation = nn.Tanh()
         # RTD Head
@@ -341,13 +341,26 @@ class CustomTrainer(Trainer):
         
         # Optionally, log individual losses
         if self.args.report_to == "wandb":
-            wandb.log({
-                "total_loss": total_loss.item(),
-                "contrastive_loss": loss_contrastive.item(),
-                "rtd_loss": loss_rtd.item()
+            self.log({
+                "train/loss": total_loss.item(),
+                "train/contrastive_loss": loss_contrastive.item(),
+                "train/rtd_loss": loss_rtd.item(),
+                "train/learning_rate": self.optimizer.param_groups[0]["lr"],
+                "train/grad_norm": self.get_grad_norm(),
             })
 
         return (total_loss, pooled_output) if return_outputs else total_loss
+
+    def evaluation_loop(self, *args, **kwargs):
+        output = super().evaluation_loop(*args, **kwargs)
+        # Ensure evaluation metrics are properly logged
+        metrics = output.metrics
+        self.log({
+            "eval/loss": metrics.get("eval_loss", 0),
+            "eval/runtime": metrics.get("eval_runtime", 0),
+            "eval/samples_per_second": metrics.get("eval_samples_per_second", 0),
+        })
+        return output
 
 # ==============================
 # 6. Main Training Function
@@ -362,12 +375,12 @@ def main():
     # ------------------------------
     dapt_config = {
         'batch_size': 4,
-        'learning_rate': 3e-6,  
+        'learning_rate': 1e-6,  
         'num_epochs': 10,
         'max_length': 512,
         'warmup_steps': 1000,
         'max_grad_norm': 1.0,
-        'weight_decay': 1e-2,
+        'weight_decay': 0.1,
         'output_dir': os.path.join(models_dir, 'dapt_checkpoints'),
         'logging_dir': os.path.join(models_dir, 'logs'),
         'rtd_loss_weight': 0.05, 
@@ -454,7 +467,7 @@ def main():
         save_steps=5000,
         save_total_limit=3,
         evaluation_strategy="steps",
-        eval_steps=1000,
+        eval_steps=5000,
         fp16=True if torch.cuda.is_available() else False,
         logging_dir=dapt_config['logging_dir'],
         report_to="wandb",
