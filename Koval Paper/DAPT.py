@@ -352,16 +352,27 @@ class CustomTrainer(Trainer):
 
         return (total_loss, pooled_output) if return_outputs else total_loss
 
-    def evaluation_loop(self, *args, **kwargs):
-        output = super().evaluation_loop(*args, **kwargs)
-        # Ensure evaluation metrics are properly logged
-        metrics = output.metrics
-        self.log({
-            "eval/loss": metrics.get("eval_loss", 0),
-            "eval/runtime": metrics.get("eval_runtime", 0),
-            "eval/samples_per_second": metrics.get("eval_samples_per_second", 0),
-        })
-        return output
+    def evaluation_loop(self, dataloader, description, prediction_loss_only=None, ignore_keys=None, metric_key_prefix="eval"):
+        # Call parent's evaluation loop
+        eval_output = super().evaluation_loop(
+            dataloader, 
+            description, 
+            prediction_loss_only, 
+            ignore_keys, 
+            metric_key_prefix
+        )
+        
+        # Get the original metrics
+        metrics = eval_output.metrics
+        
+        # Add eval_loss to metrics if it doesn't exist
+        if "eval_loss" not in metrics and hasattr(eval_output, "loss"):
+            metrics["eval_loss"] = eval_output.loss.mean().item()
+        
+        # Log metrics
+        self.log(metrics)
+        
+        return eval_output
 
 # ==============================
 # 6. Main Training Function
@@ -426,7 +437,7 @@ def main():
     # 6.5. Load and Prepare Dataset
     # ------------------------------
     logger.info("Loading dataset...")
-    dataset_path = r"/Research/Koval Paper/Data/Output/Model Data/DAPT Data/dapt_sentences.csv"
+    dataset_path = r"/Data/Output/Model Data/DAPT Data/dapt_sentences.csv"
     try:
         sentences_df = pd.read_csv(dataset_path)
         sentences = sentences_df['sentence'].tolist()
