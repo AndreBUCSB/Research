@@ -271,7 +271,7 @@ class CustomTrainer(Trainer):
         self.mask_prob = mask_prob
         self.max_length = max_length  
 
-    def compute_loss(self, model, inputs, return_outputs=False):
+    def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
         # Original inputs
         input_ids = inputs['input_ids']
         attention_mask = inputs['attention_mask']
