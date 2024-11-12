@@ -1,0 +1,21 @@
+.env
+LegacyCode.ipynb
+
+# Ignore Python virtual environment
+.venv/
+venv/
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+# Ignore VS Code settings
+.vscode/
+
+# Ignore other common files
+.DS_Store
+*.log
+*.egg-info/
+build/
+dist/
+
