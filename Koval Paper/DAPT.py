@@ -269,7 +269,8 @@ class CustomTrainer(Trainer):
         self.generator_tokenizer = generator_tokenizer
         self.rtd_loss_weight = rtd_loss_weight
         self.mask_prob = mask_prob
-        self.max_length = max_length  
+        self.max_length = max_length
+        self.processing_class = self.tokenizer
 
     def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
         # Original inputs
@@ -278,7 +279,7 @@ class CustomTrainer(Trainer):
         batch_size, seq_len = input_ids.size()
 
         # Decode original sentences
-        sentences = self.tokenizer.batch_decode(input_ids, skip_special_tokens=True)
+        sentences = self.processing_class.batch_decode(input_ids, skip_special_tokens=True)
         
         # Generate augmented sentences and collect mask indices
         augmented_data = [
@@ -293,7 +294,7 @@ class CustomTrainer(Trainer):
         augmented_sentences, mask_indices_list = zip(*augmented_data)
         
         # Tokenize augmented sentences with same max_length
-        augmented_encodings = self.tokenizer(
+        augmented_encodings = self.processing_class(
             augmented_sentences,
             padding='max_length',
             truncation=True,
