@@ -437,7 +437,8 @@ def main():
     # 6.5. Load and Prepare Dataset
     # ------------------------------
     logger.info("Loading dataset...")
-    dataset_path = r"Research/Koval Paper/Data/Output/Model Data/DAPT Data/dapt_sentences.csv"
+    dataset_path = r"/Research/Koval Paper/Data/Output/Model Data/DAPT Data/dapt_sentences.csv"
+    
     try:
         sentences_df = pd.read_csv(dataset_path)
         sentences = sentences_df['sentence'].tolist()
