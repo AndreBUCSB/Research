@@ -360,7 +360,7 @@ def main():
     # 6.1. Configuration
     # ------------------------------
     dapt_config = {
-        'batch_size': 128,
+        'batch_size': 64,
         'learning_rate': 3e-6,  
         'num_epochs': 10,
         'max_length': 512,
