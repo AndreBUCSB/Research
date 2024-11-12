@@ -353,6 +353,9 @@ class CustomTrainer(Trainer):
 # ==============================
 
 def main():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    models_dir = os.path.join(current_dir, 'Models')
+
     # ------------------------------
     # 6.1. Configuration
     # ------------------------------
@@ -364,8 +367,8 @@ def main():
         'warmup_steps': 1000,
         'max_grad_norm': 1.0,
         'weight_decay': 1e-2,
-        'output_dir': 'dapt_checkpoints',
-        'logging_dir': 'logs',
+        'output_dir': os.path.join(models_dir, 'dapt_checkpoints'),
+        'logging_dir': os.path.join(models_dir, 'logs'),
         'rtd_loss_weight': 0.05, 
         'mask_prob': 0.15,     
         'max_steps': 100000,
