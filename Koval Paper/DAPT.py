@@ -17,6 +17,7 @@ import torch.nn.functional as F
 from sklearn.model_selection import train_test_split
 import random
 import numpy as np
+from transformers import EarlyStoppingCallback
 
 # ==============================
 # 0. Utility Functions
