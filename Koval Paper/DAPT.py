@@ -371,7 +371,7 @@ def main():
         'logging_dir': os.path.join(models_dir, 'logs'),
         'rtd_loss_weight': 0.05, 
         'mask_prob': 0.15,     
-        'max_steps': 100000,
+        'max_steps': 50000,
     }
 
     # ------------------------------
