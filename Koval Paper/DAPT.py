@@ -272,6 +272,7 @@ class CustomTrainer(Trainer):
         self.mask_prob = mask_prob
         self.max_length = max_length
         self.processing_class = self.tokenizer
+        self.eval_losses = []
 
     def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
         # Original inputs
@@ -341,21 +342,23 @@ class CustomTrainer(Trainer):
         )
         
         # Optionally, log individual losses
-        if self.args.report_to == "wandb":
-            self.log({
-                "train/loss": total_loss.item(),
-                "train/contrastive_loss": loss_contrastive.item(),
-                "train/rtd_loss": loss_rtd.item(),
-                "train/learning_rate": self.optimizer.param_groups[0]["lr"],
-                "train/grad_norm": self.get_grad_norm(),
-            })
-
-        if not self.training:
-            self.eval_loss = total_loss.item()
+        if self.training:
+            if self.args.report_to == "wandb":
+                self.log({
+                    "train/loss": total_loss.item(),
+                    "train/contrastive_loss": loss_contrastive.item(),
+                    "train/rtd_loss": loss_rtd.item(),
+                    "train/learning_rate": self.optimizer.param_groups[0]["lr"],
+                    "train/grad_norm": self.get_grad_norm(),
+                })
+        else:
+            # During evaluation, collect the losses
+            self.eval_losses.append(total_loss.item())
         
         return (total_loss, pooled_output) if return_outputs else total_loss
 
     def evaluation_loop(self, dataloader, description, prediction_loss_only=None, ignore_keys=None, metric_key_prefix="eval"):
+        self.eval_losses = []
         # Call parent's evaluation loop
         eval_output = super().evaluation_loop(
             dataloader, 
@@ -365,22 +368,24 @@ class CustomTrainer(Trainer):
             metric_key_prefix
         )
         
-        # Get the original metrics
-        metrics = eval_output.metrics
-        
-        # Add eval_loss directly from the loss computed in compute_loss
-        if hasattr(self, "eval_loss"):
-            metrics["eval_loss"] = self.eval_loss
+        # Compute average evaluation loss
+        if self.eval_losses:
+            avg_eval_loss = sum(self.eval_losses) / len(self.eval_losses)
             
-            # Also log individual components
+            # Update metrics
+            metrics = eval_output.metrics
+            metrics["eval_loss"] = avg_eval_loss
+            
+            # Log to wandb
             self.log({
-                "eval/loss": self.eval_loss,
+                "eval/loss": avg_eval_loss,
                 "eval/runtime": metrics.get("eval_runtime", 0),
                 "eval/samples_per_second": metrics.get("eval_samples_per_second", 0),
                 "eval/steps_per_second": metrics.get("eval_steps_per_second", 0),
             })
+            
+            eval_output.metrics = metrics
         
-        eval_output.metrics = metrics
         return eval_output
 
 # ==============================
