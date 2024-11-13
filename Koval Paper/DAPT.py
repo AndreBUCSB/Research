@@ -491,7 +491,7 @@ def main():
         warmup_steps=dapt_config['warmup_steps'],
         max_steps=100000,
         logging_steps=500,
-        save_steps=100,
+        save_steps=500,
         save_total_limit=3,
         evaluation_strategy="steps",
         eval_steps=500,
