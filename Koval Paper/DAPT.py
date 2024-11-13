@@ -342,7 +342,7 @@ class CustomTrainer(Trainer):
         )
         
         # Optionally, log individual losses
-        if self.training:
+        if model.training:
             if self.args.report_to == "wandb":
                 self.log({
                     "train/loss": total_loss.item(),
