@@ -350,6 +350,9 @@ class CustomTrainer(Trainer):
                 "train/grad_norm": self.get_grad_norm(),
             })
 
+        if not self.training:
+            self.eval_loss = total_loss.item()
+        
         return (total_loss, pooled_output) if return_outputs else total_loss
 
     def evaluation_loop(self, dataloader, description, prediction_loss_only=None, ignore_keys=None, metric_key_prefix="eval"):
@@ -365,13 +368,19 @@ class CustomTrainer(Trainer):
         # Get the original metrics
         metrics = eval_output.metrics
         
-        # Add eval_loss to metrics if it doesn't exist
-        if "eval_loss" not in metrics and hasattr(eval_output, "loss"):
-            metrics["eval_loss"] = eval_output.loss.mean().item()
+        # Add eval_loss directly from the loss computed in compute_loss
+        if hasattr(self, "eval_loss"):
+            metrics["eval_loss"] = self.eval_loss
+            
+            # Also log individual components
+            self.log({
+                "eval/loss": self.eval_loss,
+                "eval/runtime": metrics.get("eval_runtime", 0),
+                "eval/samples_per_second": metrics.get("eval_samples_per_second", 0),
+                "eval/steps_per_second": metrics.get("eval_steps_per_second", 0),
+            })
         
-        # Log metrics
-        self.log(metrics)
-        
+        eval_output.metrics = metrics
         return eval_output
 
 # ==============================
@@ -480,7 +489,7 @@ def main():
         save_steps=5000,
         save_total_limit=3,
         evaluation_strategy="steps",
-        eval_steps=5000,
+        eval_steps=100,
         fp16=True if torch.cuda.is_available() else False,
         logging_dir=dapt_config['logging_dir'],
         report_to="wandb",
